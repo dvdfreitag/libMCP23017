@@ -3,8 +3,8 @@
 
 #include <avr/io.h>
 
-#define MCP23017_PORTA 0x00
-#define MCP23017_PORTB 0x01
+#define MCP23017_PORTA 0x00U
+#define MCP23017_PORTB 0x01U
 
 void MCP23017_Init(TWI_t *twi, uint8_t address);
 
