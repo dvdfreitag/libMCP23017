@@ -93,7 +93,7 @@ TWI_t *TWI;
 uint8_t Address;
 uint8_t Bank;
 
-uint8_t value_write(uint8_t addr, uint8_t value)
+uint8_t mcp23017_value_write(uint8_t addr, uint8_t value)
 {	// Sanity check
 	if (!TWI) return TWI_NACK;
 
@@ -103,15 +103,16 @@ uint8_t value_write(uint8_t addr, uint8_t value)
 	if (TWI_WriteByte(addr) != TWI_ACK) goto error;
 	if (TWI_WriteByte(value) != TWI_ACK) goto error;
 
-	TWI_Stop();
+	TWI_Stop(TWI_ACK);
 	return TWI_ACK;
 
 error:
-	TWI_Stop();
+	// Error occurred, terminate communication
+	TWI_Stop(TWI_NACK);
 	return TWI_NACK;
 }
 
-uint8_t value_read(uint8_t addr, uint8_t *value)
+uint8_t mcp23017_value_read(uint8_t addr, uint8_t *value)
 {	// Sanity check
 	if (!TWI || !value) return TWI_NACK;
 
@@ -123,13 +124,14 @@ uint8_t value_read(uint8_t addr, uint8_t *value)
 	TWI_Restart();
 
 	if (TWI_WriteByte(MCP23017_OPCODE | Address | 0x01) != TWI_ACK) goto error;
-	uint8_t retval = TWI_ReadByte(TWI_NACK);
+	*value = TWI_ReadByte(TWI_NACK);
 
-	TWI_Stop();
-	return retval;
+	TWI_Stop(TWI_NACK);
+	return TWI_ACK;
 
 error:
-	TWI_Stop();
+	// There was an error, NACK the slave and terminate communication
+	TWI_Stop(TWI_NACK);
 	return TWI_NACK;
 }
 
@@ -141,112 +143,112 @@ void MCP23017_Init(TWI_t *twi, uint8_t address)
 
 uint8_t MCP23017_GetIODIR(uint8_t *iodir, uint8_t port)
 {
-	return value_read(Bank_Addr[IODIRA_B0 + (port != 0)][(Bank != 0)], iodir);
+	return mcp23017_value_read(Bank_Addr[IODIRA_B0 + (port != 0)][(Bank != 0)], iodir);
 }
 
 uint8_t MCP23017_SetIODIR(uint8_t iodir, uint8_t port)
 {
-	return value_write(Bank_Addr[IODIRA_B0 + (port != 0)][(Bank != 0)], iodir);
+	return mcp23017_value_write(Bank_Addr[IODIRA_B0 + (port != 0)][(Bank != 0)], iodir);
 }
 
 uint8_t MCP23017_GetIPOL(uint8_t *ipol, uint8_t port)
 {
-	return value_read(Bank_Addr[IPOLA_B0 + (port != 0)][(Bank != 0)], ipol);
+	return mcp23017_value_read(Bank_Addr[IPOLA_B0 + (port != 0)][(Bank != 0)], ipol);
 }
 
 uint8_t MCP23017_SetIPOL(uint8_t ipol, uint8_t port)
 {
-	return value_write(Bank_Addr[IPOLA_B0 + (port != 0)][(Bank != 0)], ipol);
+	return mcp23017_value_write(Bank_Addr[IPOLA_B0 + (port != 0)][(Bank != 0)], ipol);
 }
 
 uint8_t MCP23017_GetGPINTEN(uint8_t *gpinten, uint8_t port)
 {
-	return value_read(Bank_Addr[GPINTENA_B0 + (port != 0)][(Bank != 0)], gpinten);
+	return mcp23017_value_read(Bank_Addr[GPINTENA_B0 + (port != 0)][(Bank != 0)], gpinten);
 }
 
 uint8_t MCP23017_SetGPINTEN(uint8_t gpinten, uint8_t port)
 {
-	return value_write(Bank_Addr[GPINTENA_B0 + (port != 0)][(Bank != 0)], gpinten);
+	return mcp23017_value_write(Bank_Addr[GPINTENA_B0 + (port != 0)][(Bank != 0)], gpinten);
 }
 
 uint8_t MCP23017_GetDEFVAL(uint8_t *defval, uint8_t port)
 {
-	return value_read(Bank_Addr[DEFVALA_B0 + (port != 0)][(Bank != 0)], defval);
+	return mcp23017_value_read(Bank_Addr[DEFVALA_B0 + (port != 0)][(Bank != 0)], defval);
 }
 
 uint8_t MCP23017_SetDEFVAL(uint8_t defval, uint8_t port)
 {
-	return value_write(Bank_Addr[DEFVALA_B0 + (port != 0)][(Bank != 0)], defval);
+	return mcp23017_value_write(Bank_Addr[DEFVALA_B0 + (port != 0)][(Bank != 0)], defval);
 }
 
 uint8_t MCP23017_GetINTCON(uint8_t *intcon, uint8_t port)
 {
-	return value_read(Bank_Addr[INTCONA_B0 + (port != 0)][(Bank != 0)], intcon);
+	return mcp23017_value_read(Bank_Addr[INTCONA_B0 + (port != 0)][(Bank != 0)], intcon);
 }
 
 uint8_t MCP23017_SetINTCON(uint8_t intcon, uint8_t port)
 {
-	return value_write(Bank_Addr[INTCONA_B0 + (port != 0)][(Bank != 0)], intcon);
+	return mcp23017_value_write(Bank_Addr[INTCONA_B0 + (port != 0)][(Bank != 0)], intcon);
 }
 
 uint8_t MCP23017_GetIOCON(uint8_t *iocon)
 {
-	return value_read(Bank_Addr[IOCONA_B0][(Bank != 0)], iocon);
+	return mcp23017_value_read(Bank_Addr[IOCONA_B0][(Bank != 0)], iocon);
 }
 
 uint8_t MCP23017_SetIOCON(uint8_t iocon)
 {
-	return value_write(Bank_Addr[IOCONA_B0][(Bank != 0)], iocon);
+	return mcp23017_value_write(Bank_Addr[IOCONA_B0][(Bank != 0)], iocon);
 
 	Bank = iocon & 0x80; // Update Bank when setting IOCON
 }
 
 uint8_t MCP23017_GetGPPU(uint8_t *gppu, uint8_t port)
 {
-	return value_read(Bank_Addr[GPPUA_B0 + (port != 0)][(Bank != 0)], gppu);
+	return mcp23017_value_read(Bank_Addr[GPPUA_B0 + (port != 0)][(Bank != 0)], gppu);
 }
 
 uint8_t MCP23017_SetGPPU(uint8_t gppu, uint8_t port)
 {
-	return value_write(Bank_Addr[GPPUA_B0 + (port != 0)][(Bank != 0)], gppu);
+	return mcp23017_value_write(Bank_Addr[GPPUA_B0 + (port != 0)][(Bank != 0)], gppu);
 }
 
 uint8_t MCP23017_GetINTF(uint8_t *intf, uint8_t port)
 {
-	return value_read(Bank_Addr[INTFA_B0 + (port != 0)][(Bank != 0)], intf);
+	return mcp23017_value_read(Bank_Addr[INTFA_B0 + (port != 0)][(Bank != 0)], intf);
 }
 
 uint8_t MCP23017_SetINTF(uint8_t intf, uint8_t port)
 {
-	return value_write(Bank_Addr[INTFA_B0 + (port != 0)][(Bank != 0)], intf);
+	return mcp23017_value_write(Bank_Addr[INTFA_B0 + (port != 0)][(Bank != 0)], intf);
 }
 
 uint8_t MCP23017_GetINTCAP(uint8_t *intcap, uint8_t port)
 {
-	return value_read(Bank_Addr[INTCAPA_B0 + (port != 0)][(Bank != 0)], intcap);
+	return mcp23017_value_read(Bank_Addr[INTCAPA_B0 + (port != 0)][(Bank != 0)], intcap);
 }
 
 uint8_t MCP23017_SetINTCAP(uint8_t intcap, uint8_t port)
 {
-	return value_write(Bank_Addr[INTCAPA_B0 + (port != 0)][(Bank != 0)], intcap);
+	return mcp23017_value_write(Bank_Addr[INTCAPA_B0 + (port != 0)][(Bank != 0)], intcap);
 }
 
 uint8_t MCP23017_GetGPIO(uint8_t *gpio, uint8_t port)
 {
-	return value_read(Bank_Addr[GPIOA_B0 + (port != 0)][(Bank != 0)], gpio);
+	return mcp23017_value_read(Bank_Addr[GPIOA_B0 + (port != 0)][(Bank != 0)], gpio);
 }
 
 uint8_t MCP23017_SetGPIO(uint8_t gpio, uint8_t port)
 {
-	return value_write(Bank_Addr[GPIOA_B0 + (port != 0)][(Bank != 0)], gpio);
+	return mcp23017_value_write(Bank_Addr[GPIOA_B0 + (port != 0)][(Bank != 0)], gpio);
 }
 
 uint8_t MCP23017_GetOLAT(uint8_t *olat, uint8_t port)
 {
-	return value_read(Bank_Addr[OLATA_B0 + (port != 0)][(Bank != 0)], olat);
+	return mcp23017_value_read(Bank_Addr[OLATA_B0 + (port != 0)][(Bank != 0)], olat);
 }
 
 uint8_t MCP23017_SetOLAT(uint8_t olat, uint8_t port)
 {
-	return value_write(Bank_Addr[OLATA_B0 + (port != 0)][(Bank != 0)], olat);
+	return mcp23017_value_write(Bank_Addr[OLATA_B0 + (port != 0)][(Bank != 0)], olat);
 }
